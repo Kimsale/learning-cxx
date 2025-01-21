@@ -5,19 +5,30 @@
 template<class T>
 struct Tensor4D {
     unsigned int shape[4];
-    T *data;
+    T *data;    // data 指针，指向张量的实际数据
 
-    Tensor4D(unsigned int const shape_[4], T const *data_) {
+/*     Tensor4D(unsigned int const shape_[4], T const *data_) {
         unsigned int size = 1;
         // TODO: 填入正确的 shape 并计算 size
         data = new T[size];
         std::memcpy(data, data_, size * sizeof(T));
-    }
-    ~Tensor4D() {
-        delete[] data;
+    } */
+    Tensor4D(unsigned int const shape_[4], T const *data_) {
+        // 正确初始化形状并计算数据大小
+        std::memcpy(shape, shape_, sizeof(shape)); // 复制形状 将输入的形状数组 shape_ 复制到类的 shape 成员
+        unsigned int size = 1;
+        for (int i = 0; i < 4; ++i) {
+            size *= shape[i]; // 计算总大小
+        }
+        data = new T[size];
+        std::memcpy(data, data_, size * sizeof(T)); // 将输入数据复制到 data 中
     }
 
-    // 为了保持简单，禁止复制和移动
+    ~Tensor4D() {
+        delete[] data; // 内存释放：在析构时释放动态分配的内存，避免内存泄漏
+    }
+
+    // 为了保持简单，禁止复制和移动  删除复制构造函数和移动构造函数，确保 Tensor4D 对象不能被复制或移动，保持对象的唯一性
     Tensor4D(Tensor4D const &) = delete;
     Tensor4D(Tensor4D &&) noexcept = delete;
 
@@ -26,11 +37,52 @@ struct Tensor4D {
     // `others` 长度为 1 但 `this` 长度不为 1 的维度将发生广播计算。
     // 例如，`this` 形状为 `[1, 2, 3, 4]`，`others` 形状为 `[1, 2, 1, 4]`，
     // 则 `this` 与 `others` 相加时，3 个形状为 `[1, 2, 1, 4]` 的子张量各自与 `others` 对应项相加。
+/*     Tensor4D &operator+=(Tensor4D const &others) {
+        // TODO: 实现单向广播的加法
+        return *this;
+    } */
     Tensor4D &operator+=(Tensor4D const &others) {
         // TODO: 实现单向广播的加法
+        
+        // 预先存储每个维度是否需要广播
+        bool broadcast[4];
+        for (auto i = 0; i < 4; ++i){
+            broadcast[i] = (shape[i] != others.shape[i]);
+            if (broadcast[i]){ // 如果形状不一致就要广播
+                ASSERT(others.shape[i] ==1, "!"); // 单向广播 others 的对应长度必须是1
+            }
+        }
+
+        auto dst = this->data; //当前的元素地址
+        auto src = others.data; //要加上的元素地址
+        T *marks[4]{src};      // 4 个维度的锚点  如果某个维度需要广播，src 会重置为锚点，确保正确取值
+        for (unsigned int i0 = 0u; i0 < shape[0]; ++i0){
+            if (broadcast[0]) src = marks[0];     // 如果这个阶是广播的。回到锚点位置
+            marks[1] = src;                       // 记录下一个锚点
+
+            for (unsigned int i1 = 0; i1 < shape[1]; ++i1){
+                if (broadcast[1]) src = marks[1];
+                marks[2] = src;
+
+                for (unsigned int i2 = 0; i2 < shape[2]; ++i2){
+                    if (broadcast[2]) src = marks[2];
+                    marks[3] = src;
+
+                    for (unsigned int i3 = 0; i3 < shape[3]; ++i3){
+                        if (broadcast[3]) src = marks[3];
+                        *dst++ += *src++;          // *dst 解引用 dst 指针，获取指针指向的值（即目标数组中的当前元素）。
+                        // 获取 dst 当前指向的元素（目标数组中的当前位置）。
+                        // 获取 src 当前指向的元素（源数组中的当前位置）。
+                        // 将 src 指向的值加到 dst 指向的值上。
+                        // 移动 dst 和 src 指针，指向它们各自的下一个元素。
+                    }
+                }
+            }
+        }
         return *this;
     }
 };
+
 
 // ---- 不要修改以下代码 ----
 int main(int argc, char **argv) {
