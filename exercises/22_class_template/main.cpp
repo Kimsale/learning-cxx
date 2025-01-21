@@ -1,4 +1,5 @@
 ﻿#include "../exercise.h"
+#include <cstring>  // 包含正确的头文件
 
 // READ: 类模板 <https://zh.cppreference.com/w/cpp/language/class_template>
 
@@ -60,15 +61,15 @@ struct Tensor4D {
             if (broadcast[0]) src = marks[0];     // 如果这个阶是广播的。回到锚点位置
             marks[1] = src;                       // 记录下一个锚点
 
-            for (unsigned int i1 = 0; i1 < shape[1]; ++i1){
+            for (unsigned int i1 = 0u; i1 < shape[1]; ++i1){
                 if (broadcast[1]) src = marks[1];
                 marks[2] = src;
 
-                for (unsigned int i2 = 0; i2 < shape[2]; ++i2){
+                for (unsigned int i2 = 0u; i2 < shape[2]; ++i2){
                     if (broadcast[2]) src = marks[2];
                     marks[3] = src;
 
-                    for (unsigned int i3 = 0; i3 < shape[3]; ++i3){
+                    for (unsigned int i3 = 0u; i3 < shape[3]; ++i3){
                         if (broadcast[3]) src = marks[3];
                         *dst++ += *src++;          // *dst 解引用 dst 指针，获取指针指向的值（即目标数组中的当前元素）。
                         // 获取 dst 当前指向的元素（目标数组中的当前位置）。
